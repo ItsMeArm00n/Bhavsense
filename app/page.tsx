@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { AlertModal } from "@/components/alert-modal"
 import {
   Shield,
   Zap,
@@ -24,6 +25,7 @@ export default function SentimentShieldHindi() {
   const [result, setResult] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [prediction, setPrediction] = useState("")
+  const [showTimeoutModal, setShowTimeoutModal] = useState(false)
   const [isVisible, setIsVisible] = useState({
     hero: false,
     features: false,
@@ -59,28 +61,53 @@ export default function SentimentShieldHindi() {
     setIsLoading(true)
     setResult("")
     setPrediction("")
+    setShowTimeoutModal(false)
 
     try {
-      const response = await fetch("https://ItsMeArm00n-hindisenti.hf.space/predict", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sentence: sentence.trim(),
-        }),
+      // Create a timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error("API_TIMEOUT"))
+        }, 8000) // 8 seconds timeout
       })
+
+      // Race between the API call and timeout
+      const response = await Promise.race([
+        fetch("https://ItsMeArm00n-hindisenti.hf.space/predict", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            sentence: sentence.trim(),
+          }),
+        }),
+        timeoutPromise
+      ]) as Response
 
       if (!response.ok) {
         throw new Error("API request failed")
       }
 
       const data = await response.json()
-      setPrediction(data.prediction)
-      setResult(`Sentiment: ${data.prediction}`)
-    } catch (error) {
+      const validSentiments = ["positive", "negative", "neutral", "neutral (low confidence)"]
+      if (data.prediction && validSentiments.includes(data.prediction.toLowerCase())) {
+        setPrediction(data.prediction)
+        setResult(`Sentiment: ${data.prediction}`)
+      } else {
+        setShowTimeoutModal(true)
+        setResult("Error: Unexpected response from API. Please try again.")
+        setPrediction("error")
+      }
+    } catch (error: any) {
       console.error("Error predicting sentiment:", error)
-      setResult("Error: Unable to analyze sentiment. Please try again.")
+      if (error.message === "API_TIMEOUT") {
+        setShowTimeoutModal(true)
+        setResult("Error: API timeout. Please try again.")
+      } else {
+        setResult("⚠️ The API is taking longer than expected or returned an unexpected response. It may currently be asleep. Please restart it using the [API Source (Hugging Face)] link in the footer.")
+        document.querySelector(".text-xl.font-semibold.mb-4")?.classList.add("text-red-500")
+      }
       setPrediction("error")
     } finally {
       setIsLoading(false)
@@ -136,7 +163,7 @@ export default function SentimentShieldHindi() {
                   <Shield className="h-8 w-8 text-white drop-shadow-lg" />
                 </div>
               </div>
-              <span className="text-xl font-bold text-foreground drop-shadow-sm text-float">SentimentShield-Hindi</span>
+              <span className="text-xl font-bold text-foreground drop-shadow-sm text-float">BhāvSense AI</span>
             </div>
             <div className="hidden md:flex space-x-8">
               <a
@@ -206,15 +233,11 @@ export default function SentimentShieldHindi() {
             variant="secondary"
             className="mb-8 text-sm px-6 py-3 hover-lift professional-card shimmer-effect font-medium shadow-lg"
           >
-            🚀 Advanced Hindi NLP Technology
+            Advanced Hindi NLP Technology
           </Badge>
           <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-8 text-balance text-float">
             <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-800 bg-clip-text text-transparent drop-shadow-lg">
-              SentimentShield
-            </span>
-            <br />
-            <span className="text-4xl md:text-5xl text-muted-foreground text-float" style={{ animationDelay: "0.5s" }}>
-              Hindi
+              BhāvSense AI
             </span>
           </h1>
           <p
@@ -227,18 +250,18 @@ export default function SentimentShieldHindi() {
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Button
               size="lg"
-              className="text-lg px-10 py-4 hover-lift transition-all duration-300 professional-card shadow-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0"
+              className="text-lg px-10 py-4 hover-lift transition-all duration-300 professional-card shadow-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-black border-0"
               asChild
             >
-              <a href="#predict">🎯 Try Analysis</a>
+              <a href="#predict">Try Analysis</a>
             </Button>
             <Button
               variant="outline"
               size="lg"
-              className="text-lg px-10 py-4 glass-effect hover-lift transition-all duration-300 shadow-lg bg-transparent hover:bg-blue-50/50 dark:hover:bg-blue-950/30 text-foreground border-blue-300 dark:border-blue-700"
+              className="text-lg px-10 py-4 hover-lift transition-all duration-300 professional-card shadow-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-black border-0"
               onClick={scrollToFeatures}
             >
-              📚 Learn More
+              Learn More
             </Button>
           </div>
         </div>
@@ -264,7 +287,7 @@ export default function SentimentShieldHindi() {
         <div className={`relative z-10 ${isVisible.features ? "animate-fade-in-up" : "opacity-0"}`}>
           <div className="text-center mb-20">
             <Badge variant="outline" className="mb-6 px-4 py-2 professional-card">
-              ⚡ Core Features
+              Core Features
             </Badge>
             <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 text-balance">
               Powerful <span className="text-primary">AI Capabilities</span>
@@ -348,51 +371,49 @@ export default function SentimentShieldHindi() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              <div className={`${isVisible.useCases ? "animate-fade-in-up animate-delay-200" : "opacity-0"}`}>
-                <Card className="hover-lift">
-                  <CardHeader>
-                    <MessageSquare className="h-10 w-10 text-primary mb-3 transition-transform duration-300 hover:scale-110" />
-                    <CardTitle className="text-xl">Customer Feedback</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">
-                      Analyze customer reviews and feedback in Hindi to understand satisfaction levels and improve
-                      services
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
+            <div className="grid md:grid-cols-3 gap-10">
+                        <Card
+                          className={`professional-card hover-lift border-0 shadow-2xl ${isVisible.features ? "animate-slide-in-left animate-delay-200" : "opacity-0"}`}
+                        >
+                          <CardHeader className="pb-6">
+                            <div className="mb-6 p-4 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-2xl w-fit">
+                              <BarChart3 className="h-12 w-12 text-primary transition-transform duration-300 hover:scale-110 drop-shadow-sm" />
+                            </div>
+                            <CardTitle className="text-2xl mb-3">Customer Feedback</CardTitle>
+                            <CardDescription className="text-base leading-relaxed">
+                              Analyze customer reviews and feedback in Hindi to understand satisfaction levels and improve services
+                            </CardDescription>
+                          </CardHeader>
+                        </Card>
 
-              <div className={`${isVisible.useCases ? "animate-fade-in-up animate-delay-400" : "opacity-0"}`}>
-                <Card className="hover-lift">
-                  <CardHeader>
-                    <TrendingUp className="h-10 w-10 text-primary mb-3 transition-transform duration-300 hover:scale-110" />
-                    <CardTitle className="text-xl">Social Media Monitoring</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">
-                      Track brand sentiment across Hindi social media posts and comments for better engagement
-                      strategies
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
+                        <Card
+                          className={`professional-card hover-lift border-0 shadow-2xl ${isVisible.features ? "animate-scale-in animate-delay-400" : "opacity-0"}`}
+                        >
+                          <CardHeader className="pb-6">
+                            <div className="mb-6 p-4 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-2xl w-fit">
+                              <Zap className="h-12 w-12 text-primary transition-transform duration-300 hover:scale-110 drop-shadow-sm" />
+                            </div>
+                            <CardTitle className="text-2xl mb-3">Content Moderation</CardTitle>
+                            <CardDescription className="text-base leading-relaxed">
+                              Automatically detect negative sentiment in Hindi content for proactive moderation and safety  
+                            </CardDescription>
+                          </CardHeader>
+                        </Card>
 
-              <div className={`${isVisible.useCases ? "animate-fade-in-up animate-delay-600" : "opacity-0"}`}>
-                <Card className="hover-lift">
-                  <CardHeader>
-                    <Shield className="h-10 w-10 text-primary mb-3 transition-transform duration-300 hover:scale-110" />
-                    <CardTitle className="text-xl">Content Moderation</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">
-                      Automatically detect negative sentiment in Hindi content for proactive moderation and safety
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+                        <Card
+                          className={`professional-card hover-lift border-0 shadow-2xl ${isVisible.features ? "animate-slide-in-right animate-delay-600" : "opacity-0"}`}
+                        >
+                          <CardHeader className="pb-6">
+                            <div className="mb-6 p-4 bg-gradient-to-br from-blue-500/10 to-indigo-500/10 rounded-2xl w-fit">
+                              <Globe className="h-12 w-12 text-primary transition-transform duration-300 hover:scale-110 drop-shadow-sm" />
+                            </div>
+                            <CardTitle className="text-2xl mb-3">Social Media Monitoring</CardTitle>
+                            <CardDescription className="text-base leading-relaxed">
+                              Track brand sentiment across Hindi social media posts and comments for better engagement strategies
+                            </CardDescription>
+                          </CardHeader>
+                        </Card>
+                      </div>
           </div>
         </div>
       </section>
@@ -414,7 +435,7 @@ export default function SentimentShieldHindi() {
         <div className={`relative z-10 ${isVisible.form ? "animate-fade-in-up" : "opacity-0"}`}>
           <div className="text-center mb-16">
             <Badge variant="outline" className="mb-6 px-4 py-2 professional-card">
-              🎯 Live Demo
+              Live Demo
             </Badge>
             <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6 text-balance">
               Try <span className="text-primary">Sentiment Analysis</span>
@@ -457,7 +478,7 @@ export default function SentimentShieldHindi() {
                 <Button
                   type="submit"
                   size="lg"
-                  className="w-full text-lg py-4 hover-lift transition-all duration-300 professional-card shadow-xl shimmer-effect bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border-0"
+                  className="w-full text-lg py-4 hover-lift transition-all duration-300 professional-card shadow-xl shimmer-effect bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-gray border-0"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -535,7 +556,7 @@ export default function SentimentShieldHindi() {
             <div className="space-y-4">
               <div className="flex items-center space-x-2">
                 <Shield className="h-6 w-6 text-primary" />
-                <h3 className="text-lg font-bold text-foreground">SentimentShield-Hindi</h3>
+                <h3 className="text-lg font-bold text-foreground">BhāvSense AI</h3>
               </div>
               <p className="text-muted-foreground text-sm leading-relaxed">
                 Advanced AI-powered Hindi sentiment analysis to help you understand emotions and opinions in Devanagari
@@ -587,7 +608,7 @@ export default function SentimentShieldHindi() {
                   <span>Website Source</span>
                 </a>
                 <a
-                  href="https://ItsMeArm00n-hindisenti.hf.space"
+                  href="https://huggingface.co/spaces/ItsMeArm00n/hindisenti/tree/main"
                   className="text-muted-foreground hover:text-foreground transition-colors duration-200 text-sm flex items-center space-x-2"
                 >
                   <ExternalLink className="h-4 w-4" />
@@ -600,9 +621,9 @@ export default function SentimentShieldHindi() {
           {/* Bottom Bar */}
           <div className="border-t border-border pt-8">
             <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-              <p className="text-sm text-muted-foreground">© 2025 SentimentShield-Hindi. All rights reserved.</p>
+              <p className="text-sm text-muted-foreground">© 2025 BhāvSense AI. All rights reserved.</p>
               <p className="text-sm text-muted-foreground">
-                Built by <span className="text-foreground font-medium">Developer</span> |
+                Built by <span className="text-foreground font-medium">Armaan Kumar</span> |
                 <a href="#" className="text-primary hover:text-primary/80 transition-colors duration-200 ml-1">
                   Portfolio
                 </a>
@@ -611,6 +632,18 @@ export default function SentimentShieldHindi() {
           </div>
         </div>
       </footer>
+
+      {/* Timeout Alert Modal */}
+      <AlertModal
+        isOpen={showTimeoutModal}
+        onClose={() => setShowTimeoutModal(false)}
+        title="API Response Timeout"
+        description="The API is taking too long. It may be asleep. Please restart it using the link [API Source (Hugging Face)] in the footer."
+        actionLabel="Visit API"
+        onAction={() => {
+          window.open("https://ItsMeArm00n-hindisenti.hf.space", "_blank")
+        }}
+      />
     </div>
   )
 }

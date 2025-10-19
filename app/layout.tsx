@@ -7,7 +7,7 @@ import { Suspense } from "react"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "SentimentShield-Hindi | Hindi Sentiment Analysis",
+  title: "BhāvSense AI | Hindi Sentiment Analysis",
   description: "Advanced Hindi sentiment analysis with confidence-based predictions and real-time processing",
   generator: "v0.app",
 }

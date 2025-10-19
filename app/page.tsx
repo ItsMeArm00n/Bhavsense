@@ -594,18 +594,18 @@ export default function SentimentShieldHindi() {
               <h4 className="text-sm font-semibold text-foreground uppercase tracking-wider">Resources</h4>
               <div className="flex flex-col space-y-2">
                 <a
-                  href="#"
+                  href="https://armaan-ai.vercel.app"
                   className="text-muted-foreground hover:text-foreground transition-colors duration-200 text-sm flex items-center space-x-2"
                 >
-                  <User className="h-4 w-4" />
+                  <ExternalLink className="h-4 w-4" />
                   <span>Developer Portfolio</span>
                 </a>
                 <a
-                  href="#"
+                  href="https://github.com/ItsMeArm00n/Bhavsense"
                   className="text-muted-foreground hover:text-foreground transition-colors duration-200 text-sm flex items-center space-x-2"
                 >
-                  <GitHub className="h-4 w-4" />
-                  <span>Website Source</span>
+                  <ExternalLink className="h-4 w-4" />
+                  <span>Website Source (GitHub)</span>
                 </a>
                 <a
                   href="https://huggingface.co/spaces/ItsMeArm00n/hindisenti/tree/main"
@@ -621,10 +621,17 @@ export default function SentimentShieldHindi() {
           {/* Bottom Bar */}
           <div className="border-t border-border pt-8">
             <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-              <p className="text-sm text-muted-foreground">© 2025 BhāvSense AI. All rights reserved.</p>
+              <p className="text-sm text-muted-foreground">
+                © 2025 BhāvSense AI. All rights reserved.
+              </p>
               <p className="text-sm text-muted-foreground">
                 Built by <span className="text-foreground font-medium">Armaan Kumar</span> |
-                <a href="#" className="text-primary hover:text-primary/80 transition-colors duration-200 ml-1">
+                <a
+                  href="https://armaan-ai.vercel.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:text-primary/80 transition-colors duration-200 ml-1"
+                >
                   Portfolio
                 </a>
               </p>
